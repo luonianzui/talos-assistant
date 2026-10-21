@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+user_data/
+build/
+dist/
+*.zip
+models/*.onnx
+models/keys.txt
+artifacts/

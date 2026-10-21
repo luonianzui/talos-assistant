@@ -1,0 +1,82 @@
+{
+  "schema": "talos.rules.reference.v1",
+  "profile": "provisional_pc",
+  "checked_on": "2026-10-21",
+  "purpose": "可见局面的保守决策推演；规则由公开文字独立实现，未复制第三方模拟器代码或素材。",
+  "sources": [
+    {
+      "id": "official_ss14",
+      "url": "https://torchlight.xd.com/ss14pn?lang=zh-CN",
+      "kind": "official",
+      "supports": "赛季身份及部分契灵对刑具刷新次数的影响；不包含完整沙盘规则。"
+    },
+    {
+      "id": "tlidb_season",
+      "url": "https://tlidb.com/cn/Tartarus_Season",
+      "kind": "community_database_test_data",
+      "supports": "20天经营、同阶克制吞噬、绮彩单独收容、终局秘藏。站点声明基于测试数据。"
+    },
+    {
+      "id": "tlidb_tip",
+      "url": "https://tlidb.com/cn/Tip",
+      "kind": "community_database_test_data",
+      "supports": "吃换开、完整克制图、象牙/猎物/划痕/鼠巢/探查等文字定义。"
+    },
+    {
+      "id": "chinese_practice",
+      "url": "https://torchlightskill.com/talos/",
+      "kind": "unofficial_practice",
+      "supports": "交互参考与卡牌名称；其随机权重、每日限制、奖励池与触发时点明确是练习参数，不能当成实机事实。"
+    },
+    {
+      "id": "community_pc_observations",
+      "url": "https://github.com/blahdot3h/tartarus-simulator/blob/f548d9aa32298648a1cf2ca0f3a8dd20a53a5d1d/README.md",
+      "kind": "community_implementation_and_player_reports",
+      "supports": "办公室加15格、所在格操作、每日换/吃互斥、连续吞噬、10绮彩上限等社区报告；本项目尚未获得用户实机样本验证。",
+      "reuse": "仅研究行为描述；仓库未提供开源许可，桌面包标为UNLICENSED，不复制其代码或素材。"
+    }
+  ],
+  "profile_assumptions": [
+    "16个顺时针编号位置，0为办公室、1至15为囚犯牢房；实际展示为6×4外环，不能画成4×4实心棋盘。",
+    "仅典狱长所在牢房的囚犯能发起吃或换；每日换与发起吃互斥，吃后可继续由该囚犯连锁吞噬或结束。",
+    "普通吃基础升1阶，随后代号随机；随机并不意味着等概率。",
+    "普通局为20天，可通过max_days表示用户确认的不同局长。结束最后一天进入终局；未开下一天时绝不猜测巡监路线。",
+    "囚犯被吃或绮彩被收容后牢房重封；绮彩最多收容10名，之后升阶上限为至臻。此规则仍需实机核对。",
+    "rules_confirmed=false时不能把建议标为已确认规则下的最优；该开关不代表未知卡牌或未知概率也已经确认。",
+    "不虚构未提供的目标奖励。当前目标、异闻或刑具如未被录入会影响准确性，用户需录入可见效果；未知效果会阻断推演。"
+  ],
+  "interfaces": {
+    "patrol_options": "已确认Effect，params.targets为画面上明确出现的目的地编号列表。该效果存在时只能巡监；移动后移除。没有猜测步长或随意传送。",
+    "probability": "ProbabilityModel提供显式代号和品质分布及来源；没提供的维度使用probability=null分支。当前接口品质分布共用于开门与换人；使用者需确认其适用范围。",
+    "pending": "绮彩珍藏、象牙随机受益人、办公室决策、连锁多房开门均记录pending_options，取得实际画面结果后才能继续。",
+    "unknown_effects": "未实现或未核对的全局效果/牢房标记/事变会使legal_actions为空，不会当作无效果处理。"
+  },
+  "implemented": [
+    {"id": "base_eat", "status": "database_text_and_provisional_flow", "sources": ["tlidb_tip", "community_pc_observations"], "behavior": "同阶克制；象吃狮狼、狮吃狼鼠、狼吃鼠、鼠吃象；升1阶并变号，保留未知概率。"},
+    {"id": "replace", "status": "database_text_and_provisional_flow", "sources": ["tlidb_tip", "community_pc_observations"], "behavior": "当前格重新生成代号与品质；本日吃换互斥。"},
+    {"id": "patrol", "status": "visible_options_only", "sources": ["community_pc_observations"], "behavior": "只进入用户确认的画面候选；关闭牢房随机开门、已开牢房保留；办公室待实际选项。"},
+    {"id": "scratch", "status": "database_text", "sources": ["tlidb_tip"], "behavior": "已显示品质的划痕闭门可被同阶头狼吃，按基础1加额外2升阶；普通开门清除标记。"},
+    {"id": "nest", "status": "database_text_with_timing_assumption", "sources": ["tlidb_tip"], "parameters": ["remaining"], "behavior": "按剩余日切换计时，成熟开门出现稀有硕鼠；提前开启会清除。"},
+    {"id": "prey", "status": "database_text_with_timing_assumption", "sources": ["tlidb_tip"], "parameters": ["partner", "remaining"], "behavior": "日开始双方各升1阶，按快照同时处理；一方离场/换人/代号改变则移除标记。"},
+    {"id": "tusk", "status": "recognized_pending_outcome", "sources": ["tlidb_tip"], "behavior": "换后触发四名随机囚犯升阶；受益人池及概率不完整，因此挂起等待实际结果。"},
+    {"id": "reveal", "status": "recognized_visible_information", "sources": ["tlidb_tip"], "behavior": "闭门仅允许记录可见品质，不读取或猜测隐藏代号。"},
+    {"id": "rope", "status": "requires_user_confirmation", "sources": ["chinese_practice", "community_pc_observations"], "behavior": "换人排除普通与魔法；显式概率模型按剩余概率质量重归一，未知仍未知。"},
+    {"id": "pestle", "status": "requires_user_confirmation", "sources": ["community_pc_observations"], "behavior": "换后保持代号，只随机品质。"},
+    {"id": "rathead", "status": "requires_user_confirmation", "sources": ["chinese_practice", "community_pc_observations"], "behavior": "允许同阶鼠吃鼠，鼠的吞噬额外升1阶。"},
+    {"id": "saw", "status": "requires_user_confirmation", "sources": ["chinese_practice", "community_pc_observations"], "parameters": ["chance"], "behavior": "按用户明确确认的触发概率额外升1阶，不内置练习概率。"},
+    {"id": "muzzle", "status": "requires_user_confirmation", "sources": ["chinese_practice", "community_pc_observations"], "parameters": ["max_population", "timing"], "behavior": "按确认的吃前/吃后场上人数阈值，额外升2阶；两个模拟器阈值不同，不能默认。"},
+    {"id": "cagefight", "status": "requires_user_confirmation", "sources": ["community_pc_observations"], "behavior": "允许同阶或低阶克制目标，吃后不变代号。"},
+    {"id": "wine", "status": "requires_user_confirmation", "sources": ["chinese_practice", "community_pc_observations"], "parameters": ["changes_species=false"], "behavior": "消耗一次赤色佳酿，使所有低于传奇的场上囚犯升1阶，保持代号。"},
+    {"id": "chain", "status": "recognized_pending_outcome", "sources": ["chinese_practice", "community_pc_observations"], "behavior": "下一次巡监触发沿途开门；多房随机变化等待实际结果，不静默丢弃。"}
+  ],
+  "not_implemented": [
+    "完整刑具/事件/异闻/珍藏卡池与目标触发奖励",
+    "刑具刷新次数及刷新候选分布",
+    "未提供牌面文本的办公室煽动与赏赐细节",
+    "复仇者之匣、钥匙串、火刑柱、蠕动铁盒等自动开门及日开始组合效果",
+    "处刑效率、三首扳指、斗争铜号、原罪烙印及其它事变完整联动",
+    "未知候选池的象牙随机受益人抽取",
+    "官方隐藏概率、后续巡监选项生成分布、真实终局掉落及战斗胜率"
+  ],
+  "acceptance_boundary": "可验证可见局面的合法动作和已覆盖效果；读到未知时给条件或阻断结果。禁止宣称覆盖全部赛季规则或保证全局最优。"
+}

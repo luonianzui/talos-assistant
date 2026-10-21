@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talos-local-assistant"
+version = "0.1.0"
+description = "Offline Windows Tartarus decision assistant with selectable strategies"
+requires-python = ">=3.12,<3.14"
+dependencies = ["PySide6-Essentials>=6.8,<7", "opencv-python-headless>=4.10,<6", "rapidocr>=3,<4", "onnxruntime>=1.20,<2", "mss>=10,<11"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pyinstaller>=6"]
+
+[project.scripts]
+talos-assistant = "talos_assistant.app:main"
+
+[tool.setuptools.packages.find]
+include = ["talos_assistant*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
